@@ -1,0 +1,37 @@
+def ackermann(m, n):
+    if m == 0:
+        return n + 1
+    elif n == 0:
+        return ackermann(m - 1, 1)
+    else:
+        return ackermann(m - 1, ackermann(m, n - 1))
+
+
+# 一般項の確認関数
+def check_general_formulas():
+    print("m = 0")
+    for n in range(7):
+        actual = ackermann(0, n)
+        formula = n + 1
+        print(f"A(0,{n}) = {actual}, 一般項: {formula}, OK: {actual == formula}")
+    
+    print("\nm = 1")
+    for n in range(7):
+        actual = ackermann(1, n)
+        formula = n + 2
+        print(f"A(1,{n}) = {actual}, 一般項: {formula}, OK: {actual == formula}")
+    
+    print("\nm = 2")
+    for n in range(7):
+        actual = ackermann(2, n)
+        formula = 2 * n + 3
+        print(f"A(2,{n}) = {actual}, 一般項: {formula}, OK: {actual == formula}")
+    
+    print("\nm = 3")
+    for n in range(7):
+        actual = ackermann(3, n)
+        formula = 2 ** (n + 3) - 3
+        print(f"A(3,{n}) = {actual}, 一般項: {formula}, OK: {actual == formula}")
+
+
+check_general_formulas()
