@@ -1,0 +1,1694 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "collapsed_sections": [
+        "zv73VDZ0S4FN",
+        "lhm1DJfvfkiT",
+        "QZYjwdT3S9BI",
+        "IR655chPYfzX",
+        "3Vyl_la9p8DM",
+        "xn-K_qCSp_OE",
+        "j6-HIKxunuCD",
+        "pXZewrpDu_aT",
+        "fVkxyWgDvFUz",
+        "YSqJvY-kvIwq"
+      ],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/tunakan12/saikikannsu/blob/main/cDA25_05_%E6%BC%94%E7%BF%92%E8%AA%B2%E9%A1%8C_%E6%9C%A8_\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# コンパイル時のエラーメッセージの日本語化"
+      ],
+      "metadata": {
+        "id": "zv73VDZ0S4FN"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "下のコードセルを実行しておく\n"
+      ],
+      "metadata": {
+        "id": "bVMzXL68TtI5"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!sudo apt-get install gettext >/dev/null 2>&1\n",
+        "!wget -c https://github.com/gcc-mirror/gcc/raw/releases/gcc-11/gcc/po/ja.po >/dev/null 2>&1\n",
+        "!msgfmt -o gcc-11.mo ja.po\n",
+        "!cp gcc-11.mo /usr/share/locale/en/LC_MESSAGES/\n",
+        "!rm -f gcc-11.mo ja.po"
+      ],
+      "metadata": {
+        "id": "PfnglC3LTDBS"
+      },
+      "execution_count": 1,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 演習課題（順序木）"
+      ],
+      "metadata": {
+        "id": "lhm1DJfvfkiT"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 準備"
+      ],
+      "metadata": {
+        "id": "QZYjwdT3S9BI"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 順序木のリスト実装\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "Yn4RC056XySb"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "#### Node_Bi型が２分木のノードの型\n",
+        "  - 右の子供は自分より大きく左の子供は自分より値が小さい\n",
+        "  - 実体は構造体　struct node_bi　型と同じ\n",
+        "  - そのノードの値と右の子供ノード、左の子供ノードのポインタをもつ\n",
+        "    - ルートから子孫へはたどれるが、祖先に向かってはたどれない\n",
+        "  - 根のノードから子供を辿ると木全体がたどれるため、木はその根のノードで表す\n",
+        "\n",
+        "#### 木を操作する関数群\n",
+        "  - Node_Bi *add_node(Node_Bi *root, int number)\n",
+        "    - 根 rootから子供をたどり、ノードを確保しnumberを挿入\n",
+        "    - 重複がない値を入れる\n",
+        "  - Node_Bi *search_node(Node_Bi *root, int number)\n",
+        "    - rootから子供を探し、numberを探す。numberをもつノードを返す\n",
+        "  - Node_Bi *delete_node(Node_Bi *root, int number)\n",
+        "    - rootから子どもをたどり、numberを削除する\n",
+        "  - void print_tree(Node_Bi *root, int depth)\n",
+        "    - 木構造をスペースで区切って表示する\n",
+        "  - int depth_tree(Node_Bi *root)\n",
+        "    - rootから子供をたどり、最も深い深さを返す\n",
+        "  - int nnodes_of_tree(Node_Bi *root)\n",
+        "    - rootから子供をたどり、何個の値が入っているか数える\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "aQRC_xMcbCE1"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file bitree_kadai.h\n",
+        "// 順序木（二分探索木）リスト実装\n",
+        "\n",
+        "// 順序木のノードを表す構造体\n",
+        "typedef struct node_bi {\n",
+        "    int number;\n",
+        "    struct node_bi *left;\n",
+        "    struct node_bi *right;\n",
+        "} Node_Bi ;\n",
+        "\n",
+        "// 再帰呼び出しを使った探索関数\n",
+        "// 指定されたnumberを持つノードを探索\n",
+        "// [入力] number: 追加する数字\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "// [出力] node: numberを持つノードのアドレス（存在しない場合は NULL)\n",
+        "Node_Bi *search_node_rec(Node_Bi *root, int number);\n",
+        "\n",
+        "// 指定されたポインターnodeを根とする部分木を\n",
+        "// 小さい順にノード番号を表示する\n",
+        "// [入力] node: 現在見ている部分木の根ノードのアドレス\n",
+        "void sort_order_tree(Node_Bi *node);\n",
+        "\n",
+        "// 指定されたnumberを持つノードを追加\n",
+        "// [入力] number: 追加する数字\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "Node_Bi *add_node(Node_Bi *root, int number);\n",
+        "\n",
+        "// 指定されたnumberを持つノードを探索\n",
+        "// [入力] number: 探索する数字\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "// [出力] node: numberを持つノードのアドレス（存在しない場合は NULL)\n",
+        "Node_Bi *search_node(Node_Bi *root, int number);\n",
+        "\n",
+        "// 指定されたnumberを持つノードを削除\n",
+        "// [入力] number: 指定された値\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "Node_Bi *delete_node(Node_Bi *root, int number);\n",
+        "\n",
+        "// 根ノードとする二分探索木をの全ノードを表示\n",
+        "// [入力] pt: 部分木の根セル番号, depth: 部分木の深さ\n",
+        "void print_tree(Node_Bi *root, int depth);\n",
+        "\n",
+        "// 木の深さを出力\n",
+        "// [入力] root: 木の根セル\n",
+        "// [出力] 木の最大深さ\n",
+        "int depth_tree(Node_Bi *root);\n",
+        "\n",
+        "// 木に登録されたノード数を表示\n",
+        "// [入力] root: 木の根セル\n",
+        "// [出力] 木に含まれるノード数\n",
+        "int nnodes_of_tree(Node_Bi *root);\n",
+        "\n",
+        "// 順序木のノード全てを削除\n",
+        "// [入力] root : 根ノード\n",
+        "void delete_tree(Node_Bi *root);\n"
+      ],
+      "metadata": {
+        "id": "YWmwZ62FT_-1",
+        "outputId": "fc4d7d94-ad83-447f-a84f-cf7d2b8eac11",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing bitree_kadai.h\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "94lzfZWVT4dy",
+        "outputId": "55ba772c-5c47-4ca1-8c13-235a35cc9056",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "source": [
+        "%%file bitree.c\n",
+        "#include<stdio.h>\n",
+        "#include<stdlib.h>\n",
+        "#include<math.h>\n",
+        "#include<time.h>\n",
+        "#include\"bitree_kadai.h\"\n",
+        "\n",
+        "\n",
+        "// 順序木のノード全てを削除\n",
+        "// [入力] root : 根ノード\n",
+        "void delete_tree(Node_Bi *root){\n",
+        "    if(root == NULL) {return;}\n",
+        "    delete_tree(root->left);\n",
+        "    delete_tree(root->right);\n",
+        "//    printf(\"free:%d\\n\", root->number);\n",
+        "    free(root); root=NULL;\n",
+        "}\n",
+        "\n",
+        "// ノードの構造体のメモリを確保し、データを設定\n",
+        "// [入力] number: 追加する数字\n",
+        "// [出力] new_node: 追加ノードアドレス\n",
+        "Node_Bi *create_node(int number){\n",
+        "    Node_Bi *new_node;\n",
+        "    new_node = (Node_Bi*)malloc(sizeof(Node_Bi));\n",
+        "    if(new_node == NULL) {printf(\"malloc error\\n\"); exit;}\n",
+        "    new_node->left = NULL;\n",
+        "    new_node->right = NULL;\n",
+        "    new_node->number = number;\n",
+        "    return new_node;\n",
+        "}\n",
+        "\n",
+        "// 指定されたnumberを持つノードを追加\n",
+        "// [入力] number: 追加する数字\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "Node_Bi *add_node(Node_Bi *root, int number){\n",
+        "    Node_Bi *node;\n",
+        "    if(root==NULL){\n",
+        "        root = create_node(number);\n",
+        "        return root;\n",
+        "    }\n",
+        "    node = root; // 根ノードから順に追加する場所を探索\n",
+        "    while(1) {\n",
+        "        if(number < node->number){\n",
+        "            if(node->left==NULL){\n",
+        "                node->left = create_node(number);\n",
+        "                break;\n",
+        "            }\n",
+        "            node = node->left; // 左の子がある場合は左の子を新たな注目ノードに設定\n",
+        "        }\n",
+        "        else if(number > node->number){\n",
+        "            if(node->right==NULL){\n",
+        "                node->right = create_node(number);\n",
+        "                break;\n",
+        "            }\n",
+        "            node = node->right;\n",
+        "        }\n",
+        "        else { //(number==node->number)\n",
+        "            printf(\"%d already exist\\n\", number);\n",
+        "            break;\n",
+        "        }\n",
+        "    }\n",
+        "    return root;\n",
+        "}\n",
+        "\n",
+        "// 指定されたnumberを持つノードを探索\n",
+        "// [入力] number: 追加する数字\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "// [出力] node: numberを持つノードのアドレス（存在しない場合は NULL)\n",
+        "Node_Bi *search_node(Node_Bi *root, int number){\n",
+        "    Node_Bi *node;\n",
+        "    node = root;\n",
+        "    while(node){\n",
+        "        if(number < node->number){\n",
+        "            node = node->left;\n",
+        "        }\n",
+        "        else if(number > node->number){\n",
+        "            node = node->right;\n",
+        "        }\n",
+        "        else { //number==node->number\n",
+        "            return node;\n",
+        "        }\n",
+        "    }\n",
+        "    return NULL; //not found\n",
+        "}\n",
+        "\n",
+        "// 指定された子の無いノードを削除\n",
+        "// [入力] node: 削除するノードのアドレス\n",
+        "// [入力] parent: 削除するノードの親ノードのアドレス\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "Node_Bi *delete_no_child_node\n",
+        "  (Node_Bi *root, Node_Bi *node, Node_Bi *parent){\n",
+        "    if(parent != NULL){\n",
+        "        if(parent->left == node){\n",
+        "            parent->left = NULL;\n",
+        "        }\n",
+        "        else {\n",
+        "            parent->right = NULL;\n",
+        "        }\n",
+        "        free(node);\n",
+        "    }\n",
+        "    else {\n",
+        "        free(node);\n",
+        "        root = NULL;\n",
+        "    }\n",
+        "    return root;\n",
+        "}\n",
+        "\n",
+        "// 指定された子が１つのノードを削除\n",
+        "// [入力] node: 削除するノードのアドレス\n",
+        "// [入力] child: 削除するノードの子ノードのアドレス\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "Node_Bi *delete_one_child_node\n",
+        "  (Node_Bi *root, Node_Bi *node, Node_Bi * child){\n",
+        "    node->number = child->number; // 削除対象ノードにその子ノードをコピー\n",
+        "    node->left = child->left;\n",
+        "    node->right = child->right;\n",
+        "    free(child); // コピー元のノードを削除\n",
+        "    return root;\n",
+        "}\n",
+        "\n",
+        "// 指定された子が２つのノードを削除\n",
+        "// [入力] node: 削除するノードのアドレス\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "Node_Bi *delete_two_child_node\n",
+        "    (Node_Bi *root, Node_Bi *node){\n",
+        "    Node_Bi *max, *max_parent;\n",
+        "    max = node->left;\n",
+        "    max_parent = node;\n",
+        "    while(max->right != NULL){\n",
+        "        max_parent = max;\n",
+        "        max = max->right;\n",
+        "    }\n",
+        "    //printf(\"max number is %d\\n\", max->number);\n",
+        "    node->number = max->number;\n",
+        "    if(max->left == NULL){ // maxは最大ノードなので必ずmax->rightはNULLになる\n",
+        "        root = delete_no_child_node(root, max, max_parent); }\n",
+        "    else {root = delete_one_child_node(root, max, max->left);}\n",
+        "        return root;\n",
+        "}\n",
+        "\n",
+        "// 指定されたnumberを持つノードを削除\n",
+        "// [入力] number: 指定された値\n",
+        "// [入出力] root: 根ノードのアドレス\n",
+        "Node_Bi *delete_node(Node_Bi *root, int number){\n",
+        "    Node_Bi *node;\n",
+        "    Node_Bi *parent;\n",
+        "    if(root == NULL){return NULL;}\n",
+        "    node = root;\n",
+        "    parent = NULL;\n",
+        "    while(node !=  NULL){\n",
+        "        if(number < node->number){\n",
+        "            parent = node;\n",
+        "            node = node->left;\n",
+        "        }\n",
+        "        else if(number > node->number){\n",
+        "            parent = node;\n",
+        "            node = node->right;\n",
+        "        }\n",
+        "        else {\n",
+        "            break;\n",
+        "        }\n",
+        "    }\n",
+        "    if(node == NULL){\n",
+        "        printf(\"Node %d does not exist\\n\", number);\n",
+        "        return root;\n",
+        "    }\n",
+        "    if(node->left == NULL && node->right == NULL){\n",
+        "        root = delete_no_child_node(root, node, parent); }\n",
+        "    else if((node->left != NULL && node->right == NULL) ||\n",
+        "        (node->right != NULL && node->left == NULL)){\n",
+        "        if(node->left != NULL){\n",
+        "            root = delete_one_child_node(root, node, node->left);\n",
+        "        }\n",
+        "        else {\n",
+        "            root = delete_one_child_node(root, node, node->right);\n",
+        "        }\n",
+        "    }\n",
+        "    else {\n",
+        "        root = delete_two_child_node(root, node);\n",
+        "    }\n",
+        "    return root;\n",
+        "}\n",
+        "\n",
+        "// 内部関数: 配列表現に2分木を入れ直す\n",
+        "// [入力] tree_array: 配列表現の配列\n",
+        "//        node: 木のノードセル\n",
+        "//        idx : 配列のインデックス\n",
+        "static void fill_tree_array(int *tree_array, Node_Bi *node, int idx) {\n",
+        "    if (node == NULL) return;\n",
+        "    tree_array[idx] = node->number;\n",
+        "    fill_tree_array(tree_array, node->left, idx*2);\n",
+        "    fill_tree_array(tree_array, node->right, idx*2+1);\n",
+        "}\n",
+        "\n",
+        "// 根ノードとする二分探索木をの全ノードを表示\n",
+        "// [入力] root: 木の根セル, depth: 部分木の深さ(未使用)\n",
+        "void print_tree(Node_Bi *root, int depth){\n",
+        "    int max_d = depth_tree(root);\n",
+        "    int *tree_array;\n",
+        "    int size = pow(2, max_d+1);\n",
+        "    tree_array = (int*)malloc(sizeof(int)*size);\n",
+        "    // 値が入っていないノードには -1 を入れておく\n",
+        "    for (int i = 0; i < size; i++)\n",
+        "        tree_array[i] = -1;\n",
+        "    fill_tree_array(tree_array, root, 1);\n",
+        "    int d = 0;\n",
+        "    int branch = 0;\n",
+        "    int width = 2;\n",
+        "    // 最も大きな数の桁数を width に設定する\n",
+        "    // (tree_array[]に昇順に入っているため、末尾から有効なノードを探せば良い)\n",
+        "    for (int i = size - 1; i >= 0; i--) {\n",
+        "        if (tree_array[i] != -1) {\n",
+        "            width = (int)floor(log10(tree_array[i])) + 1;\n",
+        "            break;\n",
+        "        }\n",
+        "    }\n",
+        "    // 枝が幅 2 なので最低でも 2 にする\n",
+        "    if (width < 2)\n",
+        "        width = 2;\n",
+        "    for (int i = 1; i < size; i++) {\n",
+        "        if (i == pow(2, d)) {\n",
+        "            // the first node in this depth\n",
+        "            if (branch == 0) {\n",
+        "                printf(\"depth%2d:%*s\", d, (int)(pow(2,max_d - d)-1)*width, \"\");\n",
+        "            } else {\n",
+        "                printf(\"        %*s\", (int)(pow(2,max_d - d)-1)*width, \"\");\n",
+        "            }\n",
+        "        } else {\n",
+        "            // ノード間を空白で埋める(階層が深いほど間隔が広くなる)\n",
+        "            printf(\"%*s\", (int)((pow(2,max_d - d+1)-1)*width), \"\");\n",
+        "        }\n",
+        "        if (tree_array[i] != -1) {\n",
+        "            if (branch == 0) {\n",
+        "                // ノードを描く\n",
+        "                printf(\"%*d\", width, tree_array[i]);\n",
+        "            } else if (i % 2 == 0) {\n",
+        "                // 枝を描く(左側)\n",
+        "                printf(\"%*s%s\", width-2, \"\", \"／\");\n",
+        "            } else {\n",
+        "                // 枝を描く(右側)\n",
+        "                printf(\"%*s%s\", width-2, \"\", \"＼\");\n",
+        "            }\n",
+        "        } else {\n",
+        "            // ノードが無い分を空白で埋める\n",
+        "            printf(\"%*s\", width, \"\");\n",
+        "        }\n",
+        "        if (i == pow(2, d+1) - 1) {\n",
+        "            // the last node in this depth\n",
+        "            printf(\"\\n\");\n",
+        "            if (branch == 1) {\n",
+        "                // 枝を描いた後、ノードを描く必要があるため、\n",
+        "                // 同じ階層の先頭にノードに戻る\n",
+        "                i = pow(2, d) - 1;\n",
+        "                branch = 0;\n",
+        "            } else {\n",
+        "                // ノードを描いたため、次の階層へ進む\n",
+        "                // (まず枝から描く)\n",
+        "                d++;\n",
+        "                branch = 1;\n",
+        "            }\n",
+        "        }\n",
+        "    }\n",
+        "    free(tree_array);\n",
+        "    printf(\"\\n\");\n",
+        "}\n",
+        "\n",
+        "\n",
+        "// [入力] root: 木の根セル\n",
+        "// [出力] 木の最大深さ\n",
+        "int depth_tree(Node_Bi *root){\n",
+        "    int i,dr,dl;\n",
+        "    if(root == NULL) return -1;\n",
+        "    dr=depth_tree(root->right)+1;\n",
+        "    dl=depth_tree(root->left)+1;\n",
+        "    if(dr>dl) return dr;\n",
+        "    else return dl;\n",
+        "}\n",
+        "\n",
+        "// [入力] root: 木の根セル\n",
+        "// [出力] 木に含まれるノード数\n",
+        "int nnodes_of_tree(Node_Bi *root){\n",
+        "    int i,nr,nl;\n",
+        "    if(root == NULL) return 0;\n",
+        "    nr=nnodes_of_tree(root->right);\n",
+        "    nl=nnodes_of_tree(root->left);\n",
+        "    return nl+nr+1;\n",
+        "}\n",
+        "\n"
+      ],
+      "execution_count": 3,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing bitree.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file sort_order_tree.c\n",
+        "#include<stdlib.h>\n",
+        "#include<stdio.h>\n",
+        "#include\"bitree_kadai.h\"\n",
+        "// コンパイル用のダミー（後ほど課題で作成）\n",
+        "// 指定されたポインターnodeからつながるノードから\n",
+        "// 値が小さい順のノード番号を表示する\n",
+        "// [入力] node: 現在見ている部分木の根ノードのアドレス\n",
+        "void sort_order_tree(Node_Bi *node){\n",
+        "    //ダミー\n",
+        "}"
+      ],
+      "metadata": {
+        "id": "jOzrvCdhCjKJ",
+        "outputId": "2398e331-38a4-45d7-b543-671710035b68",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing sort_order_tree.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### main関数\n",
+        "  - 初めにデータを順序木に格納していく\n",
+        "    - 3 1 3 2 であれば、3個のデータ　1,3,2を順序木に入れる\n",
+        "  - 次に木の操作列を受け取り、木を使って処理する\n",
+        "    - a:add, d:delete, s:search, n:depth and nnodes, z:sort, q:exit\n",
+        "      - z は木のデータをソートして表示（課題２）\n",
+        "    - a 200 d 10 s 20 n q であれば、２００を木に追加し、１０のノードを削除し、２０が木に入っているか確認し、最後に木に含まれるノード数、最大の深さを表示する"
+      ],
+      "metadata": {
+        "id": "IR655chPYfzX"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file main.c\n",
+        "#include<stdio.h>\n",
+        "#include<stdlib.h>\n",
+        "#include\"bitree_kadai.h\"\n",
+        "\n",
+        "int main(void){\n",
+        "    Node_Bi *root, *node;\n",
+        "    int number, loop, size, d, n;\n",
+        "    char input;\n",
+        "    int i;\n",
+        "    root = NULL;\n",
+        "\n",
+        "    // はじめに何も入っていない根にノードを追加していく\n",
+        "    scanf(\"%d\", &size);\n",
+        "    for(i=0;i<size;i++){\n",
+        "        scanf(\"%d\",&number);\n",
+        "        root = add_node(root, number);\n",
+        "    }\n",
+        "\n",
+        "    // 次に上で作成した木に操作を行う\n",
+        "    loop = 1;\n",
+        "    while(loop){\n",
+        "    //input =a:add, d:delete, s:search, n:depth and nnodes, q:exit\n",
+        "    //number > 0\n",
+        "        int ret = scanf(\" %c\", &input);\n",
+        "        if (input=='q' || ret == 0 || ret == -1) {loop = 0;}\n",
+        "        else {\n",
+        "            switch(input){\n",
+        "                case 'a': //add\n",
+        "                    scanf(\"%d\", &number);\n",
+        "                    root = add_node(root, number);\n",
+        "                    printf(\"number %d is added: \\n\", number);\n",
+        "                    break;\n",
+        "                case 'd': //delete\n",
+        "                    scanf(\"%d\", &number);\n",
+        "                    root = delete_node(root, number);\n",
+        "                    printf(\"number %d is deleted: \\n\", number);\n",
+        "                    break;\n",
+        "                case 's': //search\n",
+        "                    scanf(\"%d\", &number);\n",
+        "                    node = search_node_rec(root, number);\n",
+        "                    if(node == NULL){printf(\"number %d is not found\\n\", number);}\n",
+        "                    else {printf(\"number %d is found: \\n\", number);}\n",
+        "                    break;\n",
+        "                case 'n': //depth and number of nodes\n",
+        "                    d = depth_tree(root);\n",
+        "                    n = nnodes_of_tree(root);\n",
+        "                    printf(\"number of nodes, height \\n%d %d\\n\", n, d);\n",
+        "                    break;\n",
+        "                case 'z': //sort of nodes\n",
+        "                    sort_order_tree(root);\n",
+        "                    break;\n",
+        "               default:\n",
+        "                    loop = 0;\n",
+        "                    break;\n",
+        "            }\n",
+        "        }\n",
+        "        if(input=='a'||input=='d'||input=='s'){\n",
+        "          print_tree(root, 0); printf(\"\\n\");\n",
+        "        }\n",
+        "    }\n",
+        "\n",
+        "    delete_tree(root);\n",
+        "    return 0;\n",
+        "}"
+      ],
+      "metadata": {
+        "id": "CtpbSphrS8KK",
+        "outputId": "aec488fb-1d5c-441a-f0ba-4ff61f6d831a",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 5,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing main.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "##課題１"
+      ],
+      "metadata": {
+        "id": "3Vyl_la9p8DM"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "Colab上では順序木の探索はwhile文を使って実装をしていた。再帰呼び出しを適用することでより、コードは短く実装できる。\n",
+        "\n",
+        "そこで、再帰呼び出しを使った順序木の探索する関数を作成せよ。\n",
+        "\n",
+        "下のコードではreturn命令が4つあり、それらが全てNULLを返しており間違っている。それらを適切な処理に変更して正しい探索関数を作成せよ。"
+      ],
+      "metadata": {
+        "id": "npkpFqwVgnKy"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file search_rec.c\n",
+        "#include<stdlib.h>\n",
+        "#include\"bitree_kadai.h\"\n",
+        "\n",
+        "// 指定されたポインターnodeからつながるノードのうち，\n",
+        "// 指定されたnumと一致する値(node->number)を持つノードへの\n",
+        "// ポインターを返す\n",
+        "// [入力] num: 探索する数字\n",
+        "// [入力] node: 現在見ている部分木の根ノードのアドレス\n",
+        "// [出力] numを持つノードのアドレス（存在しない場合は NULL)\n",
+        "Node_Bi *search_node_rec(Node_Bi *node, int num){\n",
+        "    if(node==NULL)\n",
+        "      return NULL;\n",
+        "    else if(node->number == num) // 見つかった場合\n",
+        "      return NULL;\n",
+        "    else if(node->number < num)\n",
+        "      return NULL;\n",
+        "    else\n",
+        "      return NULL;\n",
+        "}"
+      ],
+      "metadata": {
+        "id": "cCqxGDQfhHHd",
+        "outputId": "133714d2-4683-48a6-b06d-a00d0f799ba6",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 6,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing search_rec.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 実行確認"
+      ],
+      "metadata": {
+        "id": "Bm048J0tB85O"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# 上のプログラムをコンパイルし ./bitree という実行ファイルを作成\n",
+        "!gcc -o bitree bitree.c main.c search_rec.c sort_order_tree.c -lm\n",
+        "# 木に登録する9個の初期データ\n",
+        "!echo \"9 40 60 80 50 90 10 30 45 35  \" > tmp.txt\n",
+        "# 木の操作処理を追記 a:add, d:delete, s:search, n:depth and nnodes, q:exit\n",
+        "!echo \"s 50 s 99 q \" >> tmp.txt\n",
+        "# 木に登録する初期データと木の操作\n",
+        "!cat tmp.txt\n",
+        "!cat tmp.txt | ./bitree  //コマンドの実行"
+      ],
+      "metadata": {
+        "id": "_D8ThGAoCIF2",
+        "outputId": "987e8c13-ce3f-4da5-c5ec-2307b39556b0",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 7,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "9 40 60 80 50 90 10 30 45 35  \n",
+            "s 50 s 99 q \n",
+            "number 50 is not found\n",
+            "depth 0:              40\n",
+            "              ／              ＼\n",
+            "depth 1:      10              60\n",
+            "                  ＼      ／      ＼\n",
+            "depth 2:          30      50      80\n",
+            "                    ＼  ／          ＼\n",
+            "depth 3:            35  45          90\n",
+            "\n",
+            "\n",
+            "number 99 is not found\n",
+            "depth 0:              40\n",
+            "              ／              ＼\n",
+            "depth 1:      10              60\n",
+            "                  ＼      ／      ＼\n",
+            "depth 2:          30      50      80\n",
+            "                    ＼  ／          ＼\n",
+            "depth 3:            35  45          90\n",
+            "\n",
+            "\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "##課題2\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "xn-K_qCSp_OE"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "与えられた順序木に含まれる数字を小さい順に表示する関数を作成せよ\n",
+        "\n",
+        "main関数はコマンド z でこの関数が呼ばれるように設定されている。\n"
+      ],
+      "metadata": {
+        "id": "YPDjot4DqIXv"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file sort_order_tree.c\n",
+        "#include<stdlib.h>\n",
+        "#include<stdio.h>\n",
+        "#include\"bitree_kadai.h\"\n",
+        "// 指定されたポインターnodeからつながるノードから\n",
+        "// 値が小さい順のノード番号を表示する\n",
+        "// [入力] node: 現在見ている部分木の根ノードのアドレス\n",
+        "void sort_order_tree(Node_Bi *node){\n",
+        "    //ここを作成。\n",
+        "    printf(\"課題２：正しく作れると木の中の値が小さい順に出力される\\n\");\n",
+        "\n",
+        "}"
+      ],
+      "metadata": {
+        "id": "0z_uDkhsqX8W",
+        "outputId": "5f588647-d305-4ca7-b2c1-b7bb270f6195",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Overwriting sort_order_tree.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 実行確認\n"
+      ],
+      "metadata": {
+        "id": "bNBH_2PKEzNf"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# 上のプログラムをコンパイルし ./bitree という実行ファイルを作成\n",
+        "!gcc -o bitree bitree.c main.c search_rec.c sort_order_tree.c -lm\n",
+        "# 木に登録する9個の初期データ\n",
+        "!echo \"9 40 60 80 50 90 10 30 45 35 \" > tmp.txt\n",
+        "# 木の操作処理を追記 a:add, d:delete, s:search, n:depth and nnodes, z:sort, q:exit\n",
+        "!echo \"z q \" >> tmp.txt\n",
+        "# 木に登録する初期データと木の操作\n",
+        "!cat tmp.txt\n",
+        "!cat tmp.txt | ./bitree  //コマンドの実行"
+      ],
+      "metadata": {
+        "id": "7-wn4sY6G7K4",
+        "outputId": "cb26dcab-957c-41f1-a08b-662cb93d8df6",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 9,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "9 40 60 80 50 90 10 30 45 35 \n",
+            "z q \n",
+            "課題２：正しく作れると木の中の値が小さい順に出力される\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 発展課題（多分木）"
+      ],
+      "metadata": {
+        "id": "j6-HIKxunuCD"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 準備"
+      ],
+      "metadata": {
+        "id": "aQM1j5cdu_aQ"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 多分木のリスト実装\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "oAZZdgVTu_aR"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "#### Node_Multi型が多分木のノードの型\n",
+        "  - 子へのポインタ child と兄弟へのポインタ sibling を持つ\n",
+        "  - 根のノードから子・兄弟を辿ると木全体がたどれるため、木はその根のノードで表す\n",
+        "\n",
+        "#### 木を操作する関数群\n",
+        "  - Node_Multi *add_child_node(Node_Multi *parent, const char *name)\n",
+        "    - parent の子に新たな名前 name を持つノードを追加する\n",
+        "  - Node_Multi *add_sibling_node(Node_Multi *elder, const char *name)\n",
+        "    - elder の末尾に新たな名前 name を持つノードを追加する\n",
+        "  - Node_Multi *search_node(Node_Multi *node, const char *name)\n",
+        "    - nodeから探索し、name と同じ名前を持つノードを返す\n",
+        "  - void print_node_preorder(Node_Multi *node, int level)\n",
+        "    - 多分木を先行順で表示する【発展課題1 で作成】\n",
+        "  - Node_Multi *delete_node(Node_Multi *root, const char *name)\n",
+        "    - rootから辿り、name と同じ名前を持つを削除する 【発展課題2 で作成】"
+      ],
+      "metadata": {
+        "id": "SYiiB01tu_aR"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file multitree.h\n",
+        "// 多分木リスト実装\n",
+        "\n",
+        "#define NAMESIZE  31\n",
+        "#define INDENT    10\n",
+        "\n",
+        "// 多分木のノードを表す構造体\n",
+        "typedef struct node_multi {\n",
+        "    char name[NAMESIZE+1];\n",
+        "    struct node_multi *child;\n",
+        "    struct node_multi *sibling;\n",
+        "} Node_Multi ;\n",
+        "\n",
+        "// 再帰呼び出しを使わない探索関数\n",
+        "// 指定されたnameと一致するノードを探索\n",
+        "// [入力] name: 検索する文字列\n",
+        "// [入力] node: ノードのアドレス\n",
+        "// [出力] node: numberを持つノードのアドレス（存在しない場合は NULL)\n",
+        "Node_Multi *search_node(Node_Multi *node, const char *name);\n",
+        "\n",
+        "// 指定されたnameを持つノードをparentの子として追加\n",
+        "// [入力] name: 追加する名前\n",
+        "// [入力] parent: 親ノードのアドレス\n",
+        "Node_Multi *add_child_node(Node_Multi *parent, const char *name);\n",
+        "\n",
+        "// 指定されたnameを持つノードをelderの兄弟として追加\n",
+        "// [入力] name: 追加する名前\n",
+        "// [入力] elder: 長子ノードのアドレス\n",
+        "Node_Multi *add_sibling_node(Node_Multi *elder, const char *name);\n",
+        "\n",
+        "// 先行順でノードを表示する\n",
+        "void print_node_preorder(Node_Multi *node, int level);\n",
+        "\n",
+        "// 中間順でノードを表示する\n",
+        "void print_node_inorder(Node_Multi *node, int level);\n",
+        "\n",
+        "// 後行順でノードを表示する\n",
+        "void print_node_postorder(Node_Multi *node, int level);\n",
+        "\n",
+        "// 非再帰でノードを表示する\n",
+        "void print_node_nonrecursive(Node_Multi *node, int level);\n",
+        "\n",
+        "// 指定されたnameを持つノードを削除\n",
+        "// [入力] name: 指定された名前\n",
+        "// [入力] root: 根ノードのアドレス\n",
+        "// [出力] 1: 見つかった(削除した), 0: 見つからなかった\n",
+        "int delete_node(Node_Multi *root, const char *name);\n",
+        "\n",
+        "// 順序木のノード全てを削除\n",
+        "// [入力] root : 根ノード\n",
+        "void delete_tree(Node_Multi *root);\n"
+      ],
+      "metadata": {
+        "outputId": "d71a4e8c-a732-41a7-f68f-a89fc3495f8b",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "TE5_fTbfu_aR"
+      },
+      "execution_count": 10,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing multitree.h\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "outputId": "cfd89d4e-78ba-4bf6-e9c9-0aa468ba6361",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "crinB_7Yu_aS"
+      },
+      "source": [
+        "%%file multitree.c\n",
+        "#include<stdio.h>\n",
+        "#include<stdlib.h>\n",
+        "#include<string.h>\n",
+        "#include<math.h>\n",
+        "#include<time.h>\n",
+        "#include\"multitree.h\"\n",
+        "\n",
+        "// 順序木のノード全てを削除\n",
+        "// [入力] root : 根ノード\n",
+        "void delete_tree(Node_Multi *root){\n",
+        "    if(root == NULL) {return;}\n",
+        "    delete_tree(root->child);\n",
+        "    delete_tree(root->sibling);\n",
+        "    free(root);\n",
+        "}\n",
+        "\n",
+        "// ノードの構造体のメモリを確保し、データを設定\n",
+        "// [入力] name: 追加する名前\n",
+        "// [出力] new_node: 追加ノードアドレス\n",
+        "Node_Multi *create_node(const char *name){\n",
+        "    Node_Multi *new_node;\n",
+        "    new_node = (Node_Multi*)malloc(sizeof(Node_Multi));\n",
+        "    if(new_node == NULL) {printf(\"malloc error\\n\"); exit;}\n",
+        "    new_node->child = NULL;\n",
+        "    new_node->sibling = NULL;\n",
+        "    strncpy(new_node->name, name, NAMESIZE);\n",
+        "    return new_node;\n",
+        "}\n",
+        "\n",
+        "// 指定されたnameを持つノードをparentの子として追加\n",
+        "// [入力] name: 追加する名前\n",
+        "// [入力] parent: 親ノードのアドレス\n",
+        "Node_Multi *add_child_node(Node_Multi *parent, const char *name){\n",
+        "    Node_Multi *node;\n",
+        "    if(parent==NULL){\n",
+        "        parent = create_node(name);\n",
+        "        return parent;\n",
+        "    }\n",
+        "    if (parent->child == NULL) {\n",
+        "        parent->child = create_node(name);\n",
+        "    } else {\n",
+        "        parent = add_sibling_node(parent->child, name);\n",
+        "    }\n",
+        "    return parent;\n",
+        "}\n",
+        "\n",
+        "// 指定されたnameを持つノードをelderの兄弟として追加\n",
+        "// [入力] name: 追加する名前\n",
+        "// [入力] elder: 長子ノードのアドレス\n",
+        "Node_Multi *add_sibling_node(Node_Multi *elder, const char *name){\n",
+        "    Node_Multi *node;\n",
+        "    if(elder==NULL){\n",
+        "        elder = create_node(name);\n",
+        "        return elder;\n",
+        "    }\n",
+        "    Node_Multi *pt;\n",
+        "    for (pt = elder; pt->sibling != NULL; pt = pt->sibling)\n",
+        "        ;\n",
+        "    pt->sibling = create_node(name);\n",
+        "    return elder;\n",
+        "}\n",
+        "\n",
+        "#define STACKSIZE 100\n",
+        "// 指定されたnameを持つノードを探索\n",
+        "// [入力] name: 探索する名前\n",
+        "// [入力] node: ノードのアドレス\n",
+        "// [出力] nameと一致するノードのアドレス（存在しない場合は NULL)\n",
+        "Node_Multi *search_node(Node_Multi *node, const char *name) {\n",
+        "    Node_Multi *stack[STACKSIZE];\n",
+        "    int state[STACKSIZE];\n",
+        "    int sp = 0;\n",
+        "    Node_Multi *result = NULL;\n",
+        "    if (node == NULL)\n",
+        "        return NULL; //not found\n",
+        "    state[sp] = 1;\n",
+        "    while (state[sp]) {\n",
+        "        if (strcmp(node->name, name) == 0)\n",
+        "            return node;\n",
+        "        if (state[sp] == 1) {\n",
+        "            state[sp]++;\n",
+        "            if (node->child != NULL) {\n",
+        "                stack[sp] = node;\n",
+        "                sp++;\n",
+        "                state[sp] = 1;\n",
+        "                node = node->child;\n",
+        "            }\n",
+        "        } else if (state[sp] == 2) {\n",
+        "            state[sp]++;\n",
+        "            if (node->sibling != NULL) {\n",
+        "                stack[sp] = node;\n",
+        "                sp++;\n",
+        "                state[sp] = 1;\n",
+        "                node = node->sibling;\n",
+        "            }\n",
+        "        } else { //state == 3\n",
+        "            if (sp > 0) {\n",
+        "                sp--;\n",
+        "                node = stack[sp];\n",
+        "            } else {\n",
+        "                state[sp] = 0;\n",
+        "            }\n",
+        "        }\n",
+        "    }\n",
+        "    return NULL;\n",
+        "}\n",
+        "\n",
+        "void print_node_inorder(Node_Multi *node, int level) {\n",
+        "    if (node == NULL)\n",
+        "        return;\n",
+        "}\n",
+        "\n",
+        "void print_node_postorder(Node_Multi *node, int level) {\n",
+        "    if (node == NULL)\n",
+        "        return;\n",
+        "}\n",
+        "\n",
+        "void print_node_nonrecursive(Node_Multi *node, int level) {\n",
+        "    if (node == NULL)\n",
+        "        return;\n",
+        "}"
+      ],
+      "execution_count": 11,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing multitree.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file print_node_preorder.c\n",
+        "// ダミー関数(発展課題1で作成)\n",
+        "#include<stdlib.h>\n",
+        "#include<stdio.h>\n",
+        "#include<string.h>\n",
+        "#include\"multitree.h\"\n",
+        "// 先行順でノードを表示\n",
+        "// [入力] node: ノード\n",
+        "// [入力] level: レベル(ルートは 0, 子になるごとに +1)\n",
+        "void print_node_preorder (Node_Multi *node, int level) {\n",
+        "    if (node == NULL)\n",
+        "        return;\n",
+        "    printf(\"%*s%s\\n\", level*INDENT, level == 0 ? \"\" : \"┗\", node->name);\n",
+        "}"
+      ],
+      "metadata": {
+        "outputId": "8a46bb2e-0ff2-4ea8-9b53-674475f42b39",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "cpzDpHV8u_aS"
+      },
+      "execution_count": 12,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing print_node_preorder.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file delete_node.c\n",
+        "// ダミー関数(発展課題2で作成)\n",
+        "#include<stdlib.h>\n",
+        "#include<stdio.h>\n",
+        "#include<string.h>\n",
+        "#include\"multitree.h\"\n",
+        "\n",
+        "// node の子ノードをすべて削除した後に node を削除する\n",
+        "// [入力] node: 削除するノード\n",
+        "// [入力] parent: nodeの親ノード(NULLならばルート)\n",
+        "// [入力] elder: nodeの兄ノード(NULLならば長兄)\n",
+        "// [入力] all_siblings: 0: nodeのみを削除、1: nodeを含む兄弟ノードをすべて削除\n",
+        "static void delete_node_rec(Node_Multi *node, Node_Multi *parent, Node_Multi *elder, int all_siblings) {\n",
+        "    // 子ノードを削除するコードを追加\n",
+        "    //\n",
+        "    // all_siblings == 1 の場合、兄弟ノードを削除するコードを追加\n",
+        "    //\n",
+        "    // 自身を削除\n",
+        "    printf(\"%s is deleted.\\n\", node->name);\n",
+        "    free(node);\n",
+        "}\n",
+        "\n",
+        "// 削除するために nameと同じノードを探す\n",
+        "// [入力] node: ノード\n",
+        "// [入力] parent: nodeの親ノード(NULLならばルート)\n",
+        "// [入力] elder: nodeの兄ノード(NULLならば長兄)\n",
+        "// [入力] name: 削除対象の名前\n",
+        "// [出力] 1: 見つかった(削除した), 0: 見つからなかった\n",
+        "static int find_node_rec(Node_Multi *node, Node_Multi *parent, Node_Multi *elder, const char *name) {\n",
+        "    int result = 0;\n",
+        "    if (strcmp(node->name, name) == 0) {\n",
+        "        delete_node_rec(node, parent, elder, 0);\n",
+        "        return 1;\n",
+        "    }\n",
+        "    // 子ノード、兄弟ノードを探索するコードを追加\n",
+        "    return result;\n",
+        "}\n",
+        "\n",
+        "// 指定されたnameを持つノードを削除\n",
+        "// [入力] root: 根ノードのアドレス\n",
+        "// [入力] name: 削除対象の名前\n",
+        "// [出力] 1: 見つかった(削除した), 0: 見つからなかった\n",
+        "int delete_node(Node_Multi *root, const char *name){\n",
+        "    if(root != NULL)\n",
+        "        return find_node_rec(root, NULL, NULL, name);\n",
+        "    return 0;\n",
+        "}"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Ge0clcKLqW_w",
+        "outputId": "5f06b2b5-447e-4ddf-bcf9-ee4a8ffd4dcb"
+      },
+      "execution_count": 13,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing delete_node.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### main関数\n",
+        "  - 初めにデータを多分木に格納していく\n",
+        "    - ギリシャ神話に出てくる神の関係\n",
+        "  - 次に木の操作列を受け取り、木を使って処理する\n",
+        "    - a:add, d:delete, s:search, p:preorder print, i:inorder print, q:exit\n"
+      ],
+      "metadata": {
+        "id": "pXZewrpDu_aT"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file multitree_main.c\n",
+        "#include<stdio.h>\n",
+        "#include<stdlib.h>\n",
+        "#include<string.h>\n",
+        "#include\"multitree.h\"\n",
+        "\n",
+        "int main(void){\n",
+        "    Node_Multi *root, *node;\n",
+        "    int loop, size, d, n;\n",
+        "    char parent[NAMESIZE+1];\n",
+        "    char name[NAMESIZE+1];\n",
+        "    char input;\n",
+        "    int i;\n",
+        "\n",
+        "    root = NULL;\n",
+        "\n",
+        "    root = add_child_node(root, \"Kronos\");\n",
+        "\n",
+        "    add_child_node(root, \"Zeus\");\n",
+        "    add_child_node(root, \"Hera\");\n",
+        "    add_child_node(root, \"Demeter\");\n",
+        "    add_child_node(root, \"Poseidon\");\n",
+        "    //add_child_node(root, \"Hades\");\n",
+        "\n",
+        "    node = search_node(root, \"Zeus\");\n",
+        "    add_child_node(node, \"Athena\");\n",
+        "    add_child_node(node, \"Aphrodite\");\n",
+        "    add_child_node(node, \"Apollo\");\n",
+        "    add_child_node(node, \"Artemis\");\n",
+        "    add_child_node(node, \"Hermes\");\n",
+        "    //add_child_node(node, \"Dionysus\");\n",
+        "\n",
+        "    node = search_node(root, \"Hera\");\n",
+        "    add_child_node(node, \"Ares\");\n",
+        "    add_child_node(node, \"Eilethyia\");\n",
+        "    //add_child_node(node, \"Hebe\");\n",
+        "\n",
+        "    node = search_node(root, \"Demeter\");\n",
+        "    add_child_node(node, \"Peresphone\");\n",
+        "\n",
+        "    node = search_node(root, \"Poseidon\");\n",
+        "    //add_child_node(node, \"Orion\");\n",
+        "\n",
+        "    // 次に上で作成した木に操作を行う\n",
+        "    loop = 1;\n",
+        "    while (loop) {\n",
+        "        //input =a:add, d:delete, s:search, p:preorder print, i:inorder print, q:exit\n",
+        "        int ret = scanf(\" %c\", &input);\n",
+        "        if (input=='q' || ret == 0 || ret == -1)\n",
+        "            loop = 0;\n",
+        "        else {\n",
+        "            switch(input){\n",
+        "                case 'a': //add\n",
+        "                    scanf(\"%s\", parent);\n",
+        "                    scanf(\"%s\", name);\n",
+        "                    node = search_node(root, parent);\n",
+        "                    add_child_node(node, name);\n",
+        "                    printf(\"%s is added for child of %s: \\n\", name, parent);\n",
+        "                    break;\n",
+        "                case 'd': //delete\n",
+        "                    scanf(\"%s\", name);\n",
+        "                    printf(\"try to delete %s:\\n\", name);\n",
+        "                    if (!delete_node(root, name)) {\n",
+        "                        printf(\"%s is not found\\n\", name);\n",
+        "                    };\n",
+        "                    break;\n",
+        "                case 's': //search\n",
+        "                    scanf(\"%s\", name);\n",
+        "                    node = search_node(root, name);\n",
+        "                    if (node == NULL) {\n",
+        "                        printf(\"%s is not found\\n\", name);\n",
+        "                    } else {\n",
+        "                        printf(\"%s is found: \\n\", name);\n",
+        "                    }\n",
+        "                    break;\n",
+        "                case 'p': //preorder print\n",
+        "                    printf(\"preorder:\\n\");\n",
+        "                    print_node_preorder(root, 0);\n",
+        "                    break;\n",
+        "                case 'i': //inorder print\n",
+        "                    printf(\"inorder:\\n\");\n",
+        "                    print_node_inorder(root, 0);\n",
+        "                    break;\n",
+        "                case 't': //postorder print\n",
+        "                    printf(\"postorder:\\n\");\n",
+        "                    print_node_postorder(root, 0);\n",
+        "                    break;\n",
+        "                case 'n': //nonrecursive print\n",
+        "                    printf(\"non-recursive:\\n\");\n",
+        "                    print_node_nonrecursive(root, 0);\n",
+        "                    break;\n",
+        "                default:\n",
+        "                    loop = 0;\n",
+        "                    break;\n",
+        "            }\n",
+        "        }\n",
+        "        if (input=='a'||input=='d'||input=='s') {\n",
+        "            print_node_preorder(root, 0);\n",
+        "        }\n",
+        "    }\n",
+        "\n",
+        "    delete_tree(root);\n",
+        "    return 0;\n",
+        "}"
+      ],
+      "metadata": {
+        "outputId": "6ea55dc5-efcc-4abe-b67b-0d7d9ddd0234",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "QLtGFArPu_aT"
+      },
+      "execution_count": 14,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Writing multitree_main.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "###コンパイル＆リンク"
+      ],
+      "metadata": {
+        "id": "QkK2xiGj3BVO"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!gcc multitree.c -c\n",
+        "!gcc print_node_preorder.c -c\n",
+        "!gcc delete_node.c -c\n",
+        "!gcc multitree_main.c -c\n",
+        "!gcc multitree_main.o multitree.o print_node_preorder.o delete_node.o -o multitree"
+      ],
+      "metadata": {
+        "id": "aR-qx9BagcNV"
+      },
+      "execution_count": 15,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "###実行"
+      ],
+      "metadata": {
+        "id": "t0Lx37mg3Jgl"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!echo \"p q\" | ./multitree"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "JVYkl5E73MgI",
+        "outputId": "f6a597c1-46a4-4a75-ebe1-6c6949ce126b"
+      },
+      "execution_count": 16,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "preorder:\n",
+            "Kronos\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "##発展課題１"
+      ],
+      "metadata": {
+        "id": "fVkxyWgDvFUz"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "先行順で多分木を表示する関数 print_node_preorder() を完成せよ。\n",
+        "表示部分は用意してあるので、再帰呼び出しを追加すればよい。"
+      ],
+      "metadata": {
+        "id": "lpyudhSFvFU0"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file print_node_preorder.c\n",
+        "#include<stdio.h>\n",
+        "#include<stdlib.h>\n",
+        "#include<string.h>\n",
+        "#include\"multitree.h\"\n",
+        "\n",
+        "// 先行順でノードを表示\n",
+        "// [入力] node: ノード\n",
+        "// [入力] level: レベル(ルートは 0, 子になるごとに +1)\n",
+        "void print_node_preorder(Node_Multi *node, int level) {\n",
+        "    if (node == NULL)\n",
+        "        return;\n",
+        "    printf(\"%*s%s\\n\", level*INDENT, level == 0 ? \"\" : \"┗\", node->name);\n",
+        "    // 発展課題1: 先行順表示となるようにここを埋める\n",
+        "}"
+      ],
+      "metadata": {
+        "outputId": "0af86d21-6a60-4b93-970d-9df94a3c9891",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "l2X4TnwTvFU0"
+      },
+      "execution_count": 17,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Overwriting print_node_preorder.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "###コンパイル＆リンク"
+      ],
+      "metadata": {
+        "id": "_2rN6rxr3U9i"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!gcc print_node_preorder.c -c\n",
+        "!gcc multitree_main.o multitree.o print_node_preorder.o delete_node.o -o multitree"
+      ],
+      "metadata": {
+        "id": "MIiI2KgS3WBl"
+      },
+      "execution_count": 18,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 実行確認"
+      ],
+      "metadata": {
+        "id": "yPH7mlJKvFU1"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!echo \"s Athena s Hades a Zeus Dionysus a Kronos Hades s Hades q\" | ./multitree"
+      ],
+      "metadata": {
+        "outputId": "6b93bd97-03c3-44cc-eccf-a3cceadb6d7a",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "3hYR-TpKvFU1"
+      },
+      "execution_count": 19,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Athena is found: \n",
+            "Kronos\n",
+            "Hades is not found\n",
+            "Kronos\n",
+            "Dionysus is added for child of Zeus: \n",
+            "Kronos\n",
+            "Hades is added for child of Kronos: \n",
+            "Kronos\n",
+            "Hades is found: \n",
+            "Kronos\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "##発展課題2\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "YSqJvY-kvIwq"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "指定した名前を持つノードを削除する関数 delete_node() を完成せよ。\n",
+        "もし、そのノードが子ノードを持っていた場合、子ノードもすべて削除する必要がある。"
+      ],
+      "metadata": {
+        "id": "ZHfPsGM6vIwr"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%file delete_node.c\n",
+        "#include<stdio.h>\n",
+        "#include<stdlib.h>\n",
+        "#include<string.h>\n",
+        "#include\"multitree.h\"\n",
+        "\n",
+        "// 必要に応じて関数を追加してもよい\n",
+        "\n",
+        "// 指定されたnameを持つノードを削除\n",
+        "// [入力] root: 根ノードのアドレス\n",
+        "// [入力] name: 削除対象の名前\n",
+        "// [出力] 1: 見つかった(削除した), 0: 見つからなかった\n",
+        "int delete_node(Node_Multi *root, const char *name){\n",
+        "    // 発展課題2: 削除する関数を書く\n",
+        "    return 0;\n",
+        "}"
+      ],
+      "metadata": {
+        "outputId": "932561e6-c56c-4073-ec42-05ac5a8d1380",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "unsk8ie6vIwr"
+      },
+      "execution_count": 20,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Overwriting delete_node.c\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### コンパイル＆リンク\n"
+      ],
+      "metadata": {
+        "id": "F7fGqd2KvIws"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# 上のプログラムをコンパイルし ./multitree という実行ファイルを作成\n",
+        "!gcc delete_node.c -c\n",
+        "!gcc -o multitree multitree_main.o multitree.o print_node_preorder.o delete_node.o\n"
+      ],
+      "metadata": {
+        "id": "XiM0dyRovIws"
+      },
+      "execution_count": 21,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "###実行"
+      ],
+      "metadata": {
+        "id": "37o0xI6-37Fs"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!echo \"a Zeus Dionysus a Poseidon Orion a Hera Hebe a Kronos Hades d Demeter d Artemis d Hera d Ares q\" | ./multitree"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "jOEnH2vZ37sP",
+        "outputId": "897a9209-9dc4-492a-9dae-fd2c8dc2f13f"
+      },
+      "execution_count": 22,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Dionysus is added for child of Zeus: \n",
+            "Kronos\n",
+            "Orion is added for child of Poseidon: \n",
+            "Kronos\n",
+            "Hebe is added for child of Hera: \n",
+            "Kronos\n",
+            "Hades is added for child of Kronos: \n",
+            "Kronos\n",
+            "try to delete Demeter:\n",
+            "Demeter is not found\n",
+            "Kronos\n",
+            "try to delete Artemis:\n",
+            "Artemis is not found\n",
+            "Kronos\n",
+            "try to delete Hera:\n",
+            "Hera is not found\n",
+            "Kronos\n",
+            "try to delete Ares:\n",
+            "Ares is not found\n",
+            "Kronos\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
